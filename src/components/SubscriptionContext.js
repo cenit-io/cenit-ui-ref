@@ -10,6 +10,7 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import { Subject } from "rxjs";
 import { catchError, map } from "rxjs/operators";
+import AuthorizationService from "../services/AuthorizationService";
 
 const SC = React.createContext({});
 
@@ -62,7 +63,10 @@ export default function SubscriptionContext({ children }) {
                             okText: 'Reload'
                         }).pipe(
                             map(() => {
-                                window.location.reload();
+                                window.parent.postMessage({
+                                    cmd: 'reload',
+                                    token: AuthorizationService.token
+                                }, '*');
                                 return null;
                             })
                         );

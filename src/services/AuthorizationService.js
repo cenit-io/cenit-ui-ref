@@ -45,7 +45,7 @@ const AuthorizationService = {
         }
 
         window.parent.postMessage({
-            type: 'access',
+            cmd: 'getAccess',
             token: this.token
         }, '*');
 
