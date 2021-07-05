@@ -42,6 +42,14 @@ export default function Status() {
         setSubscriptionState({
             observable: AuthorizationService.get('status')
         });
+        window.parent.postMessage({
+            cmd: 'send',
+            domain: 'http://localhost:3002',
+            message: {
+                cmd: 'refresh'
+            },
+            token: AuthorizationService.token
+        }, '*');
     }, []);
 
     if (!user) {

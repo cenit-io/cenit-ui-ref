@@ -4,6 +4,13 @@ import React, { useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { makeStyles } from "@material-ui/core";
 import { useSubscriptionContext } from "./SubscriptionContext";
+import { HOME, PAYMENT_METHOD, PLANS, SUBSCRIBE, UNSUBSCRIBE } from "./routes";
+import Status from "./Status";
+import CardForm from "./CardForm";
+import Plans from "./Plans";
+import Subscribe from "./Subscribe";
+import Unsubscribe from "./Unsubscribe";
+import { Switch, Route } from "react-router-dom";
 
 const H = 6;
 
@@ -25,7 +32,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-export default function Layout({ children }) {
+export default function Layout() {
 
     const classes = useStyles();
 
@@ -49,7 +56,25 @@ export default function Layout({ children }) {
     return (
         <div className={classes.root}>
             <div className={classes.container}>
-                {children}
+                <div className="flex justify-content-center align-items-center relative">
+                    <Switch>
+                        <Route exact path={HOME}>
+                            <Status/>
+                        </Route>
+                        <Route path={PAYMENT_METHOD}>
+                            <CardForm/>
+                        </Route>
+                        <Route path={PLANS}>
+                            <Plans/>
+                        </Route>
+                        <Route path={SUBSCRIBE(':plan_id')}>
+                            <Subscribe/>
+                        </Route>
+                        <Route path={UNSUBSCRIBE(':plan_id')}>
+                            <Unsubscribe/>
+                        </Route>
+                    </Switch>
+                </div>
             </div>
             <div className={classes.appBar}>
                 {backButton}

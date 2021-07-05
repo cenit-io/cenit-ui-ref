@@ -13,14 +13,8 @@ const EnvironmentConfig = {
 
 export const Config = AppConfig.useEnvironmentConfig ? EnvironmentConfig : AppConfig;
 
-export const CenitHostKey = 'cenitHost';
-
-Config.getCenitHost = function () {
-    return localStorage.getItem(CenitHostKey) || this.cenitHost;
-};
-
 const appGateway = axios.create({
-    baseURL: `${Config.getCenitHost()}/app/${Config.appIdentifier}`,
+    baseURL: `${Config.cenitHost}/app/${Config.appIdentifier}`,
     timeout: Config.timeoutSpan,
 });
 
@@ -50,7 +44,6 @@ const AuthorizationService = {
         }, '*');
 
         return fromEvent(window, 'message').pipe(
-            tap(({ data }) => console.log('AAA', data)),
             map(({ data }) => data?.access),
             filter(access => access),
             tap(access => this[AccessKey] = access)
@@ -96,7 +89,7 @@ const AuthorizationService = {
 
     request: function (opts) {
         if (opts.path) {
-            opts = { ...opts, url: `${Config.getCenitHost()}${opts.path}` }
+            opts = { ...opts, url: `${Config.cenitHost}${opts.path}` }
         }
         return this.getAccess().pipe(
             switchMap(
