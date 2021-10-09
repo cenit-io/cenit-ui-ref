@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react'
 import MaterialAlert from "@material-ui/lab/Alert";
 import useResizeObserver from "@react-hook/resize-observer";
-import AuthorizationService from "../services/AuthorizationService";
+import AuthorizationService, { Config } from "../services/AuthorizationService";
 import { useSpreadState } from "../common/hooks";
 import human from 'human-time';
 import { makeStyles } from "@material-ui/core";
@@ -97,7 +97,7 @@ export default function Alert() {
             window.parent.postMessage({
                 cmd: 'openTab',
                 embeddedApp: {
-                    url: 'http://localhost:3002'
+                    url: Config.localhost
                 },
                 token: AuthorizationService.token
             }, '*');

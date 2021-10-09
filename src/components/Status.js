@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import AuthorizationService from "../services/AuthorizationService";
+import AuthorizationService, { Config } from "../services/AuthorizationService";
 import CardContent from "@material-ui/core/CardContent";
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
@@ -44,7 +44,7 @@ export default function Status() {
         });
         window.parent.postMessage({
             cmd: 'send',
-            domain: 'http://localhost:3002',
+            domain: Config.localhost,
             message: {
                 cmd: 'refresh'
             },
