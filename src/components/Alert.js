@@ -5,7 +5,9 @@ import AuthorizationService, { Config } from "../services/AuthorizationService";
 import { useSpreadState } from "../common/hooks";
 import human from 'human-time';
 import { makeStyles } from "@material-ui/core";
-import { fromEvent } from "rxjs";
+import { fromEvent, of, zip } from "rxjs";
+import { PLANS } from "./routes";
+import { switchMap } from "rxjs/operators";
 
 const useStyles = makeStyles(theme => ({
     warn: {
@@ -30,7 +32,7 @@ export default function Alert() {
         now: new Date()
     });
 
-    const { user, closed, now } = state;
+    const { user, tenant, closed, now } = state;
 
     const alert = useRef(null);
     const tenantDataTypeId = useRef(null);
@@ -47,8 +49,9 @@ export default function Alert() {
 
     useEffect(() => {
         const subscription = fromEvent(window, 'message').subscribe(
-            ({ data: { cmd } }) => {
+            ({ data: { cmd, tenantId } }) => {
                 if (cmd === 'refresh') {
+                    AuthorizationService.setXTenantId(tenantId);
                     setState({ now: new Date(), closed: false });
                 }
             }
@@ -68,36 +71,48 @@ export default function Alert() {
     }, []);
 
     useEffect(() => {
-        const subscription = AuthorizationService.request({
-            path: '/api/v3/setup/user/me',
-            headers: {
-                'X-Template-Options': JSON.stringify({
-                    viewport: '{subscribed trial_enabled account{id locked active_until}'
-                })
-            }
-        }).subscribe(user => setState({ user }));
+        const subscription = AuthorizationService.getTenantAccess().pipe(
+            switchMap(({ tenantId }) => zip(
+                AuthorizationService.request({
+                    path: '/api/v3/setup/user/me',
+                    headers: {
+                        'X-Template-Options': JSON.stringify({
+                            viewport: '{subscribed trial_enabled account{id locked active_until}}'
+                        })
+                    }
+                }),
+                tenantId ? AuthorizationService.request({
+                    path: `/api/v3/setup/account/${tenantId}`,
+                    headers: {
+                        'X-Template-Options': JSON.stringify({
+                            viewport: '{id locked active_until}'
+                        })
+                    }
+                }) : of(null)
+            ))
+        ).subscribe(([user, tenant]) => setState({ user, tenant: tenant || user.account }));
 
         return () => subscription.unsubscribe();
     }, [now]);
 
     const unlockTenant = useCallback(() => {
-        if (user) {
+        if (tenant) {
             window.parent.postMessage({
                 cmd: 'openTab',
                 dataTypeId: tenantDataTypeId.current,
-                recordId: user.account.id,
-                actionKey: { key: 'switch_tenant_lock' },
+                recordId: tenant.id,
                 token: AuthorizationService.token
             }, '*');
         }
-    }, [user]);
+    }, [tenant]);
 
     const openBillingApp = useCallback(() => {
         if (user) {
             window.parent.postMessage({
                 cmd: 'openTab',
                 embeddedApp: {
-                    url: Config.localhost
+                    url: Config.localhost,
+                    route: PLANS
                 },
                 token: AuthorizationService.token
             }, '*');
@@ -105,33 +120,15 @@ export default function Alert() {
     }, [user]);
 
     let theAlert;
-    if (!closed && user) {
-        const { trial_enabled, subscribed, account: { id: tenantId, locked, active_until } } = user;
-
-        let duration;
-        if (active_until) {
-            const activeUntil = new Date(active_until);
-            if (activeUntil > now) {
-                duration = (
-                    <div className={classes.warn}>
-                        This tenant is active for {human(activeUntil)}.
-                    </div>
-                );
-            } else if (locked || (!subscribed && !trial_enabled)) {
-                duration = (
-                    <div className={classes.warn}>
-                        This tenant is <span className={classes.danger}>DISABLED</span> and your tasks won't be
-                        executed.
-                    </div>
-                );
-            }
-        }
+    if (!closed && user && tenant) {
+        const { trial_enabled, subscribed } = user;
+        const { locked, active_until } = tenant;
 
         let unlock;
-        if (locked && !trial_enabled) {
+        if (locked) {
             unlock = (
                 <div className={classes.warn}>
-                    This tenant is <span className={classes.danger}>locked</span> and won't be reactivated, <span
+                    This tenant is <span className={classes.danger}>locked</span>, <span
                     className={classes.link}
                     onClick={unlockTenant}>
                     click here</span> to unlock this tenant.
@@ -139,6 +136,7 @@ export default function Alert() {
             );
         }
 
+        let duration;
         let billing;
         if (!subscribed && !trial_enabled) {
             billing = (
@@ -146,7 +144,24 @@ export default function Alert() {
                     To activate your tenants go to your <span className={classes.link} onClick={openBillingApp}>
                     billing settings</span> and subscribe to a plan for a tenant activation.
                 </div>
-            )
+            );
+            if (active_until) {
+                const activeUntil = new Date(active_until);
+                if (activeUntil > now) {
+                    duration = (
+                        <div className={classes.warn}>
+                            This tenant is active for {human(activeUntil)}.
+                        </div>
+                    );
+                } else if (!subscribed && !trial_enabled) {
+                    duration = (
+                        <div className={classes.warn}>
+                            This tenant is <span className={classes.danger}>DISABLED</span> because activation
+                            expired {human(activeUntil)}.
+                        </div>
+                    );
+                }
+            }
         }
 
         if (unlock || billing) {

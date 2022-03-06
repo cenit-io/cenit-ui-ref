@@ -18,11 +18,33 @@ const appGateway = axios.create({
     timeout: Config.timeoutSpan,
 });
 
+appGateway.interceptors.request.use(async config => {
+    const accessToken = await AuthorizationService.getAccessToken().toPromise();
+    if (!config.headers) {
+        config.headers = {};
+    }
+    config.headers.Authorization = `Bearer ${accessToken}`;
+    const xTenantId = AuthorizationService.getXTenantId();
+    if (xTenantId) {
+        config.headers['X-Tenant-Id'] = xTenantId;
+    }
+
+    return config;
+});
+
 export const AccessKey = 'access';
 
 const AuthorizationService = {
 
-    getAccess: function () {
+    getXTenantId: function () {
+        return this.xTenantId;
+    },
+
+    setXTenantId: function (id) {
+        this.xTenantId = id;
+    },
+
+    getTenantAccess: function () {
         let access;
         try {
             access = this[AccessKey];
@@ -35,7 +57,7 @@ const AuthorizationService = {
         }
 
         if (access) {
-            return of(access);
+            return of({ access, tenantId: this.getXTenantId() });
         }
 
         window.parent.postMessage({
@@ -44,10 +66,19 @@ const AuthorizationService = {
         }, '*');
 
         return fromEvent(window, 'message').pipe(
-            map(({ data }) => data?.access),
-            filter(access => access),
-            tap(access => this[AccessKey] = access)
+            map(({ data }) => data || {}),
+            filter(({ access }) => access),
+            tap(({ access, tenantId }) => {
+                this[AccessKey] = access;
+                this.setXTenantId(tenantId);
+            }),
         )
+    },
+
+    getAccess: function () {
+        return this.getTenantAccess().pipe(
+            map(({ access }) => access)
+        );
     },
 
     getAccessToken: function () {
@@ -57,33 +88,20 @@ const AuthorizationService = {
     },
 
     get: function (path) {
-        return this.getAccess().pipe(
-            switchMap(access => from(
-                appGateway.get(path, {
-                    headers: { Authorization: `Bearer ${access.access_token}` }
-                })
-            ).pipe(map(response => response.data)))
+        return from(appGateway.get(path)).pipe(
+            map(response => response.data)
         );
     },
 
     post: function (path, data = null) {
-        return this.getAccess().pipe(
-            switchMap(access => from(
-                appGateway.post(path, data, {
-                    headers: { Authorization: `Bearer ${access.access_token}` }
-                })
-            ).pipe(map(response => response.data)))
+        return from(appGateway.post(path, data)).pipe(
+            map(response => response.data)
         );
     },
 
     delete: function (path, data = null) {
-        return this.getAccess().pipe(
-            switchMap(access => from(
-                appGateway.delete(path, {
-                    headers: { Authorization: `Bearer ${access.access_token}` },
-                    data
-                })
-            ).pipe(map(response => response.data)))
+        return from(appGateway.delete(path, { data })).pipe(
+            map(response => response.data)
         );
     },
 
