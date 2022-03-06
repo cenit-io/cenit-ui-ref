@@ -144,7 +144,7 @@ export default function Subscribe() {
                             <td>
                                 <b>Description</b>
                             </td>
-                            <td dangerouslySetInnerHTML={{ __html: marked(plan.description) }}/>
+                            <td dangerouslySetInnerHTML={{ __html: marked(plan.description || '') }}/>
                         </tr>
                         </tbody>
                     </table>

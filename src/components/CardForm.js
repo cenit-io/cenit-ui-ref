@@ -107,7 +107,7 @@ export function StripeForm() {
     const { card, expiry, cvc, tokenObserver, disabled } = state;
 
     useEffect(() => {
-        if (history && !user.confirmed) {
+        if (history && !user?.confirmed) {
             history.push(HOME);
         }
     }, [user, history]);
