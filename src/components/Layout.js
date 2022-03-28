@@ -35,7 +35,14 @@ export default function Layout() {
         <div className={classes.root}>
             <div className={classes.container}>
                 <div className="flex justify-content-center align-items-center relative">
-                    <p>Hello Word</p>
+                    <p>Rereference</p>
+                    <ul>
+                        <li>Docs</li>
+                        <li>Roadmap</li>
+                        <li>Suggest a feature</li>
+                        <li>Report an issue</li>
+                    </ul>
+
                 </div>
             </div>
         </div>

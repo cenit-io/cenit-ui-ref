@@ -1,6 +1,6 @@
 {
-  "short_name": "Hello",
-  "name": "Basic Cenit embedded app",
+  "short_name": "references",
+  "name": "Cenit references",
   "icons": [
     {
       "src": "favicon.ico",
