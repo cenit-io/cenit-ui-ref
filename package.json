@@ -1,5 +1,5 @@
 {
-  "name": "billing",
+  "name": "cenit-ui-ref",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -10,15 +10,11 @@
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
     "@testing-library/user-event": "^12.8.3",
-    "axios": "^0.21.1",
     "clsx": "^1.1.1",
-    "human-time": "0.0.2",
-    "marked": "^2.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.3",
-    "rxjs": "^6.6.6",
     "web-vitals": "^1.1.1"
   },
   "scripts": {
